@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import React, { useEffect, useRef, useState } from 'react';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 // Import StatusBar only from expo-status-bar
-import { StatusBar } from 'expo-status-bar'; 
+import { StatusBar } from 'expo-status-bar';
+import { AppStateStatus, AppState as RNAppState } from 'react-native';
 import RoutePlanner from '../../components/RoutePlanner';
 import StoryPlayer from '../../components/StoryPlayer';
-import { AppState, RouteDetails, AudioStory } from '../../types';
-import { generateSegment, calculateTotalSegments, generateStoryOutline } from '../../services/aiService';
-import { AppState as RNAppState, AppStateStatus } from 'react-native';
+import { calculateTotalSegments, generateSegment, generateStoryOutline } from '../../services/aiService';
+import { AppState, AudioStory, RouteDetails, StorySegment } from '../../types';
 
 // --- Timeout helper ---
 const withTimeout = <T,>(promise: Promise<T>, ms: number, errorMsg: string): Promise<T> => {
@@ -98,7 +98,7 @@ useEffect(() => {
       for (let i = 0; i < segmentsToGenerate; i++) {
         const segmentIndex = story.segments.length + 1;
         const segmentOutline = story.outline[segmentIndex - 1];
-        const previousContext = story.segments.map(s => s.text).join(' ');
+        const previousContext = story.segments.map((s: StorySegment) => s.text).join(' ');
 
         setLoadingMessage(`Generating segment ${segmentIndex} of ${story.totalSegmentsEstimate}...`);
 
@@ -108,10 +108,13 @@ useEffect(() => {
           `Segment ${segmentIndex} generation timed out`
         );
 
-        setStory(prevStory => ({
-          ...prevStory!,
-          segments: [...prevStory!.segments, segment]
-        }));
+        setStory((prevStory: AudioStory | null) => {
+          if (!prevStory) return prevStory;
+          return {
+            ...prevStory,
+            segments: [...prevStory.segments, segment]
+          };
+        });
       }
     } catch (error: any) {
       console.error('Background generation error:', error);
