@@ -6,10 +6,12 @@ import { RouteDetails } from '../types';
 interface MapComponentProps {
   route?: RouteDetails | null;
   userLocation?: { latitude: number; longitude: number } | null;
+  destinationLocation?: { latitude: number; longitude: number } | null;
+  destinationRoute?: any;
   style?: any;
 }
 
-const MapComponent: React.FC<MapComponentProps> = ({ route, userLocation, style }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ route, userLocation, destinationLocation, destinationRoute, style }) => {
   const mapRef = useRef<any>(null);
   const [region, setRegion] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,6 +53,28 @@ const MapComponent: React.FC<MapComponentProps> = ({ route, userLocation, style 
             }}
             title="Your Location"
             pinColor="#4ECDC4"
+          />
+        )}
+        
+        {destinationLocation && (
+          <Marker
+            coordinate={{
+              latitude: destinationLocation.latitude,
+              longitude: destinationLocation.longitude,
+            }}
+            title="Destination"
+            pinColor="#FF6B6B"
+          />
+        )}
+        
+        {destinationRoute && destinationRoute.length > 0 && (
+          <Polyline
+            coordinates={destinationRoute.map(([lng, lat]: [number, number]) => ({
+              latitude: lat,
+              longitude: lng,
+            }))}
+            strokeColor="#FFFFFF"
+            strokeWidth={3}
           />
         )}
         

@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Dimensions, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { getCurrentLocation, reverseGeocode } from '../services/locationService';
-import { calculateRoute } from '../services/routingService';
+import { calculateRoute, geocodeAddress } from '../services/routingService';
 import { RouteDetails, StoryStyle } from '../types';
 import AddressAutocomplete from './AddressAutocomplete';
 import MapComponent from './MapComponent';
@@ -33,6 +33,8 @@ const RoutePlanner: React.FC<Props> = ({ onRouteFound, loading, error }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [locationPermissionGranted, setLocationPermissionGranted] = useState<boolean | null>(null);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [destinationLocation, setDestinationLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [destinationRoute, setDestinationRoute] = useState<any>(null);
 
   useEffect(() => {
     const getLocation = async () => {
@@ -77,6 +79,8 @@ const RoutePlanner: React.FC<Props> = ({ onRouteFound, loading, error }) => {
       <View style={styles.mapContainer}>
         <MapComponent 
           userLocation={userLocation} 
+          destinationLocation={destinationLocation}
+          destinationRoute={destinationRoute}
           style={styles.map}
         />
       </View>
@@ -107,9 +111,46 @@ const RoutePlanner: React.FC<Props> = ({ onRouteFound, loading, error }) => {
           placeholder="Destination"
           value={endAddress}
           onChangeText={setEndAddress}
-          onSelectAddress={(address) => {
+          onSelectAddress={async (address) => {
             console.log('RoutePlanner received address:', address); // Debug log
-            setEndAddress(address);
+            try {
+              setEndAddress(address);
+              console.log('Set endAddress to:', address);
+              
+              // Geocode the address to get coordinates for the map
+              console.log('Starting geocoding for:', address);
+              const coords = await geocodeAddress(address);
+              console.log('Geocoding result:', coords);
+              
+              if (coords) {
+                setDestinationLocation({ latitude: coords.lat, longitude: coords.lng });
+                console.log('Set destinationLocation to:', { latitude: coords.lat, longitude: coords.lng });
+                
+                // Calculate route from current location to destination
+                if (userLocation) {
+                  console.log('Calculating route from userLocation to destination');
+                  try {
+                    const routeDetails = await calculateRoute(
+                      `${userLocation.latitude},${userLocation.longitude}`,
+                      address,
+                      travelMode,
+                      selectedStyle
+                    );
+                    console.log('Route calculation result:', routeDetails);
+                    if (routeDetails) {
+                      setDestinationRoute(routeDetails.routeGeometry);
+                      console.log('Set destinationRoute');
+                    }
+                  } catch (error) {
+                    console.error('Failed to calculate destination route:', error);
+                  }
+                }
+              } else {
+                console.log('Geocoding failed, no coordinates found');
+              }
+            } catch (error) {
+              console.error('Error in onSelectAddress:', error);
+            }
           }}
           icon="flag"
           iconColor="#4ECDC4"

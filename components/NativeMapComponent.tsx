@@ -8,10 +8,12 @@ import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 interface NativeMapComponentProps {
   route?: RouteDetails | null;
   userLocation?: { latitude: number; longitude: number } | null;
+  destinationLocation?: { latitude: number; longitude: number } | null;
+  destinationRoute?: [number, number][] | null;
   style?: any;
 }
 
-const NativeMapComponent: React.FC<NativeMapComponentProps> = ({ route, userLocation, style }) => {
+const NativeMapComponent: React.FC<NativeMapComponentProps> = ({ route, userLocation, destinationLocation, destinationRoute, style }) => {
   const mapRef = useRef<any>(null);
   const [region, setRegion] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,6 +58,17 @@ const NativeMapComponent: React.FC<NativeMapComponentProps> = ({ route, userLoca
           />
         )}
         
+        {destinationLocation && (
+          <Marker
+            coordinate={{
+              latitude: destinationLocation.latitude,
+              longitude: destinationLocation.longitude,
+            }}
+            title="Destination"
+            pinColor="#FF6B6B"
+          />
+        )}
+        
         {route?.routeGeometry && route.routeGeometry.length > 0 && (
           <Polyline
             coordinates={route.routeGeometry.map(([lng, lat]) => ({
@@ -64,6 +77,19 @@ const NativeMapComponent: React.FC<NativeMapComponentProps> = ({ route, userLoca
             }))}
             strokeColor="#FF6B6B"
             strokeWidth={3}
+          />
+        )}
+        
+        {destinationRoute && destinationRoute.length > 0 && (
+          <Polyline
+            coordinates={destinationRoute.map(([lng, lat]: [number, number]) => ({
+              latitude: lat,
+              longitude: lng,
+            }))}
+            strokeColor="#FFFFFF"
+            strokeWidth={3}
+            lineCap="round"
+            lineJoin="round"
           />
         )}
         

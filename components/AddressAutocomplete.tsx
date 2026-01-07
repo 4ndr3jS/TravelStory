@@ -1,13 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { GeocodeResult, searchAddresses } from '../services/routingService';
 
 interface AddressAutocompleteProps {
   placeholder: string;
   value: string;
   onChangeText: (text: string) => void;
-  onSelectAddress: (address: string) => void;
+  onSelectAddress: (address: string) => void | Promise<void>;
   icon?: string;
   iconColor?: string;
 }
@@ -23,8 +23,8 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   const [suggestions, setSuggestions] = useState<GeocodeResult[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const inputRef = useRef<TextInput>(null);
   const [justSelected, setJustSelected] = useState(false);
+  const inputRef = useRef<TextInput>(null);
 
   const handleTextChange = (text: string) => {
     // Reset the justSelected flag when user manually types
@@ -39,16 +39,19 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
       const timer = setTimeout(async () => {
         setIsLoading(true);
         try {
+          console.log('Searching for:', value);
           const results = await searchAddresses(value);
+          console.log('Search results:', results);
           setSuggestions(results);
           setShowSuggestions(true);
         } catch (error) {
           console.error('Address search error:', error);
           setSuggestions([]);
+          setShowSuggestions(false);
         } finally {
           setIsLoading(false);
         }
-      }, 300);
+      }, 500); // Increased delay to reduce rapid requests
 
       return () => clearTimeout(timer);
     } else {
@@ -71,18 +74,30 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
 
   const handleSuggestionClick = (suggestion: GeocodeResult) => {
     console.log('Suggestion clicked:', suggestion.display_name);
-    setJustSelected(true); // Prevent suggestions from reappearing permanently
-    handleSelectAddress(suggestion);
+    setJustSelected(true);
+    setShowSuggestions(false);
+    
+    // Update input immediately
+    onChangeText(suggestion.display_name);
+    
+    // Call the callback
+    onSelectAddress(suggestion.display_name);
+    
+    // Blur input
+    setTimeout(() => {
+      inputRef.current?.blur();
+    }, 100);
+  };
+
+  const handleInputBlur = () => {
+    // Simple delay, no complex logic
+    setTimeout(() => setShowSuggestions(false), 300);
   };
 
   const handleInputFocus = () => {
     if (value.length > 0) {
       setShowSuggestions(true);
     }
-  };
-
-  const handleInputBlur = () => {
-    setTimeout(() => setShowSuggestions(false), 200);
   };
 
   return (
@@ -106,37 +121,25 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
 
       {showSuggestions && suggestions.length > 0 && (
         <View style={styles.suggestionsContainer}>
-          <ScrollView 
-            style={styles.suggestionsScroll}
-            keyboardShouldPersistTaps="handled"
-            nestedScrollEnabled={true}
-          >
-            {suggestions.map((suggestion, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.suggestionItem}
-                onPressIn={() => {
-                  console.log('Touch started on suggestion:', suggestion.display_name);
-                  handleSuggestionClick(suggestion);
-                }}
-                activeOpacity={0.7}
-                delayPressIn={0}
-                // Web-specific props
-                {...(Platform.OS === 'web' && {
-                  onClick: () => {
-                    console.log('Web click on suggestion:', suggestion.display_name);
-                    handleSuggestionClick(suggestion);
-                  },
-                  style: [styles.suggestionItem, { cursor: 'pointer' }]
-                })}
-              >
+          {suggestions.map((suggestion: GeocodeResult, index: number) => (
+            <TouchableOpacity
+              key={`${suggestion.display_name}-${index}`}
+              style={styles.suggestionItem}
+              onPress={() => {
+                console.log('TOUCHABLE PRESSED!!!');
+                console.log('Touch event fired for:', suggestion.display_name);
+                handleSuggestionClick(suggestion);
+              }}
+              onPressIn={() => console.log('Touch IN for:', suggestion.display_name)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
                 <Ionicons name="location-outline" size={16} color="#999" style={styles.suggestionIcon} />
                 <Text style={styles.suggestionText} numberOfLines={2}>
                   {suggestion.display_name}
                 </Text>
               </TouchableOpacity>
             ))}
-          </ScrollView>
         </View>
       )}
     </View>
@@ -146,7 +149,7 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
 const styles = StyleSheet.create({
   container: {
     marginBottom: 16,
-    zIndex: 9999,
+    zIndex: 99999, // Increased z-index
   },
   inputContainer: {
     flexDirection: 'row',
@@ -170,17 +173,15 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   suggestionsContainer: {
-    position: 'absolute',
-    top: '100%',
+    position: 'relative', // Changed from absolute
+    top: 8, // Add some spacing from input
     left: 0,
     right: 0,
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderWidth: 1,
     borderTopWidth: 0,
     borderColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 0,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
+    borderRadius: 16,
     marginTop: -1,
     maxHeight: 200,
     zIndex: 10000,
@@ -191,11 +192,12 @@ const styles = StyleSheet.create({
   suggestionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 20, // Increased padding
     paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.05)',
     backgroundColor: '#1A1A1A',
+    minHeight: 60, // Increased touch area
   },
   suggestionIcon: {
     marginRight: 12,

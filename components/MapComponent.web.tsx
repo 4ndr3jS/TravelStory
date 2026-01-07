@@ -6,10 +6,12 @@ import { RouteDetails } from '../types';
 interface MapComponentProps {
   route?: RouteDetails | null;
   userLocation?: { latitude: number; longitude: number } | null;
+  destinationLocation?: { latitude: number; longitude: number } | null;
+  destinationRoute?: any;
   style?: any;
 }
 
-const MapComponent: React.FC<MapComponentProps> = ({ route, userLocation, style }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ route, userLocation, destinationLocation, destinationRoute, style }) => {
   return (
     <View style={[styles.container, style]}>
       {userLocation ? (
