@@ -8,10 +8,11 @@ interface MapComponentProps {
   userLocation?: { latitude: number; longitude: number } | null;
   destinationLocation?: { latitude: number; longitude: number } | null;
   destinationRoute?: any;
+  travelMode?: 'WALKING' | 'DRIVING';
   style?: any;
 }
 
-const MapComponent: React.FC<MapComponentProps> = ({ route, userLocation, destinationLocation, destinationRoute, style }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ route, userLocation, destinationLocation, destinationRoute, travelMode, style }) => {
   return (
     <View style={[styles.container, style]}>
       {userLocation ? (

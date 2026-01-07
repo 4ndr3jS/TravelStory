@@ -34,7 +34,7 @@ const RoutePlanner: React.FC<Props> = ({ onRouteFound, loading, error }) => {
   const [locationPermissionGranted, setLocationPermissionGranted] = useState<boolean | null>(null);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [destinationLocation, setDestinationLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [destinationRoute, setDestinationRoute] = useState<any>(null);
+  const [route, setRoute] = useState<RouteDetails | null>(null);
 
   useEffect(() => {
     const getLocation = async () => {
@@ -80,7 +80,8 @@ const RoutePlanner: React.FC<Props> = ({ onRouteFound, loading, error }) => {
         <MapComponent 
           userLocation={userLocation} 
           destinationLocation={destinationLocation}
-          destinationRoute={destinationRoute}
+          route={route}
+          travelMode={travelMode}
           style={styles.map}
         />
       </View>
@@ -137,8 +138,9 @@ const RoutePlanner: React.FC<Props> = ({ onRouteFound, loading, error }) => {
                     );
                     console.log('Route calculation result:', routeDetails);
                     if (routeDetails) {
-                      setDestinationRoute(routeDetails.routeGeometry);
-                      console.log('Set destinationRoute');
+                      console.log('Setting route with travelMode:', routeDetails.travelMode);
+                      // Set the full route instead of just destinationRoute
+                      setRoute(routeDetails);
                     }
                   } catch (error) {
                     console.error('Failed to calculate destination route:', error);

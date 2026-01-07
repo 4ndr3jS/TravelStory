@@ -7,29 +7,44 @@ interface MapComponentProps {
   route?: RouteDetails | null;
   userLocation?: { latitude: number; longitude: number } | null;
   destinationLocation?: { latitude: number; longitude: number } | null;
-  destinationRoute?: any;
+  travelMode?: 'WALKING' | 'DRIVING';
   style?: any;
 }
 
-const MapComponent: React.FC<MapComponentProps> = ({ route, userLocation, destinationLocation, destinationRoute, style }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ route, userLocation, destinationLocation, travelMode, style }) => {
   const mapRef = useRef<any>(null);
   const [region, setRegion] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#1A1A1A',
+  },
+  map: {
+    flex: 1,
+  },
+  outerCircle: {
+    width: 25,
+    height: 25,
+    borderRadius: 15,
+    backgroundColor: 'rgba(243, 243, 243, 1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  innerCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 18.5,
+    backgroundColor: '#4e98cdff',
+  },
+});
 
-  // Helper function to create dotted line segments
-  const createDottedLineSegments = (coordinates: { latitude: number; longitude: number }[]) => {
-    const segments = [];
-    const segmentLength = 5; // Number of points in each solid segment
-    const gapLength = 5; // Number of points to skip for gap
-    
-    for (let i = 0; i < coordinates.length; i += segmentLength + gapLength) {
-      const segment = coordinates.slice(i, i + segmentLength);
-      if (segment.length > 1) {
-        segments.push(segment);
-      }
-    }
-    return segments;
-  };
+
 
   useEffect(() => {
     if (userLocation) {
@@ -43,6 +58,11 @@ const MapComponent: React.FC<MapComponentProps> = ({ route, userLocation, destin
       setIsLoading(false);
     }
   }, [userLocation]);
+
+  useEffect(() => {
+    console.log('MapComponent rerendered, travelMode:', route?.travelMode);
+  }, [route]);
+
 
   if (isLoading || !region) {
     return (
@@ -66,9 +86,12 @@ const MapComponent: React.FC<MapComponentProps> = ({ route, userLocation, destin
               latitude: userLocation.latitude,
               longitude: userLocation.longitude,
             }}
-            title="Your Location"
-            pinColor="#4ECDC4"
-          />
+            anchor={{ x: 0.45, y: 0.45 }}
+          >
+            <View style={styles.outerCircle}>
+              <View style={styles.innerCircle} />
+            </View>
+          </Marker>
         )}
         
         {destinationLocation && (
@@ -81,40 +104,6 @@ const MapComponent: React.FC<MapComponentProps> = ({ route, userLocation, destin
             pinColor="#FF6B6B"
           />
         )}
-        
-        {destinationRoute && destinationRoute.length > 0 && (() => {
-          const coordinates = destinationRoute.map(([lng, lat]: [number, number]) => ({
-            latitude: lat,
-            longitude: lng,
-          }));
-          
-          // Debug logging
-          console.log('Destination route - travelMode:', route?.travelMode, 'route:', route);
-          
-          const isWalking = route?.travelMode === 'WALKING';
-          console.log('Is walking mode:', isWalking);
-          
-          if (isWalking) {
-            // Render dotted line for walking
-            return createDottedLineSegments(coordinates).map((segment, index) => (
-              <Polyline
-                key={`destination-walking-segment-${index}`}
-                coordinates={segment}
-                strokeColor="#cccdcfff"
-                strokeWidth={2}
-              />
-            ));
-          } else {
-            // Render solid line for drivingdfdf
-            return (
-              <Polyline
-                coordinates={coordinates}
-                strokeColor="#2f3cf7ff"
-                strokeWidth={3}
-              />
-            );
-          }
-        })()}
         
         {route?.routeGeometry && route.routeGeometry.length > 0 && (() => {
           const coordinates = route.routeGeometry.map(([lng, lat]) => ({
@@ -129,61 +118,26 @@ const MapComponent: React.FC<MapComponentProps> = ({ route, userLocation, destin
           console.log('Is walking mode (main route):', isWalking);
           
           if (isWalking) {
-            // Render dotted line for walking
-            return createDottedLineSegments(coordinates).map((segment, index) => (
-              <Polyline
-                key={`walking-segment-${index}`}
-                coordinates={segment}
-                strokeColor="#cccdcfff"
-                strokeWidth={2}
-              />
-            ));
-          } else {
-            // Render solid line for driving
             return (
               <Polyline
                 coordinates={coordinates}
-                strokeColor="#66710fff"
-                strokeWidth={3}
+                strokeColor="#4572f8ff"
+                strokeWidth={6}
+              />
+            );
+          } else {
+            return (
+              <Polyline
+                coordinates={coordinates}
+                strokeColor="#4572f8ff"
+                strokeWidth={6}
               />
             );
           }
         })()}
-        
-        {route?.startLocation && (
-          <Marker
-            coordinate={{
-              latitude: route.startLocation.lat,
-              longitude: route.startLocation.lng,
-            }}
-            title="Start"
-            pinColor="#4ECDC4"
-          />
-        )}
-        
-        {route?.endLocation && (
-          <Marker
-            coordinate={{
-              latitude: route.endLocation.lat,
-              longitude: route.endLocation.lng,
-            }}
-            title="Destination"
-            pinColor="#FF6B6B"
-          />
-        )}
       </MapView>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#1A1A1A',
-  },
-  map: {
-    flex: 1,
-  },
-});
 
 export default MapComponent;
