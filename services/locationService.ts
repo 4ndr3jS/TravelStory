@@ -7,7 +7,6 @@ export interface LocationCoords {
 
 export const getCurrentLocation = async (): Promise<LocationCoords | null> => {
   try {
-    // Request permission first
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
       console.warn('Permission to access location was denied');
@@ -15,7 +14,7 @@ export const getCurrentLocation = async (): Promise<LocationCoords | null> => {
     }
 
     const location = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Balanced,
+      accuracy: Location.Accuracy.Highest,
     });
 
     return {
@@ -30,25 +29,25 @@ export const getCurrentLocation = async (): Promise<LocationCoords | null> => {
 
 export const reverseGeocode = async (coords: LocationCoords): Promise<string> => {
   try {
-    // First try Expo's reverse geocoding
     const results = await Location.reverseGeocodeAsync(coords);
     
     if (results.length > 0) {
       const address = results[0];
-      // Format address components
-      const parts = [
-        address.street,
-        address.city,
-        address.region,
-        address.country,
-      ].filter(Boolean);
-      
-      if (parts.length > 0) {
-        return parts.join(', ');
-      }
+
+      const place =
+        (address as any).name ||
+        (address as any).place ||
+        (address as any).business ||
+        (address as any).pointOfInterest ||
+        address.street;
+      const city = address.city || (address as any).district || (address as any).subregion;
+      const region = address.region;
+      const country = address.country;
+
+      const parts = [place, city, region, country].filter(Boolean);
+      if (parts.length > 0) return parts.join(', ');
     }
     
-    // Fallback to Nominatim API if Expo doesn't return a good address
     const nominatimResponse = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.latitude}&lon=${coords.longitude}`,
       {
@@ -60,12 +59,30 @@ export const reverseGeocode = async (coords: LocationCoords): Promise<string> =>
 
     if (nominatimResponse.ok) {
       const data = await nominatimResponse.json();
-      if (data && data.display_name) {
-        return data.display_name;
+      if (data) {
+        const a = data.address || {};
+        const place =
+          data.name ||
+          a.amenity ||
+          a.building ||
+          a.tourism ||
+          a.leisure ||
+          a.shop ||
+          a.office ||
+          a.neighbourhood ||
+          a.suburb ||
+          a.road;
+        const city = a.city || a.town || a.village || a.municipality;
+        const region = a.state || a.county;
+        const country = a.country;
+
+        const parts = [place, city, region, country].filter(Boolean);
+        if (parts.length > 0) return parts.join(', ');
+
+        if (data.display_name) return data.display_name;
       }
     }
     
-    // Final fallback with better formatting
     return `Location: ${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`;
   } catch (error) {
     console.error('Error reverse geocoding:', error);

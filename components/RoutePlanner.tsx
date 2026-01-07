@@ -71,7 +71,7 @@ const RoutePlanner: React.FC<Props> = ({ onRouteFound, loading, error }) => {
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
         <Text style={styles.title}>Plan Your Journey</Text>
-        <Text style={styles.subtitle}>Create an interactive story for your route</Text>
+        <Text style={styles.subtitle}>Create a story for your route and play it with our AI</Text>
       </View>
 
       <View style={styles.mapContainer}>
@@ -208,6 +208,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 8,
     textAlign: 'center',
+    marginTop: 24,
   },
   subtitle: {
     color: '#999',
