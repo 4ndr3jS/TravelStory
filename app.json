@@ -43,6 +43,10 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "ORS_API_KEY": "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImEwOTg1YjQ1ZDViYjRhZWI4NzhiOGUzZGFhNDc1Mjc2IiwiaCI6Im11cm11cjY0In0=",
+      "GRAPHHOPPER_API_KEY": "b425b743-c845-4380-9725-bda3e5622667"
     }
   }
 }
