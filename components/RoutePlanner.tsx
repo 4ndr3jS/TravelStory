@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   mapContainer: {
-    height: 200,
+    height: 400,
     marginBottom: 24,
     borderRadius: 16,
     overflow: 'hidden',
