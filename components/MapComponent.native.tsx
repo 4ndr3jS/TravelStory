@@ -16,6 +16,21 @@ const MapComponent: React.FC<MapComponentProps> = ({ route, userLocation, destin
   const [region, setRegion] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Helper function to create dotted line segments
+  const createDottedLineSegments = (coordinates: { latitude: number; longitude: number }[]) => {
+    const segments = [];
+    const segmentLength = 5; // Number of points in each solid segment
+    const gapLength = 5; // Number of points to skip for gap
+    
+    for (let i = 0; i < coordinates.length; i += segmentLength + gapLength) {
+      const segment = coordinates.slice(i, i + segmentLength);
+      if (segment.length > 1) {
+        segments.push(segment);
+      }
+    }
+    return segments;
+  };
+
   useEffect(() => {
     if (userLocation) {
       const newRegion = {
@@ -67,27 +82,73 @@ const MapComponent: React.FC<MapComponentProps> = ({ route, userLocation, destin
           />
         )}
         
-        {destinationRoute && destinationRoute.length > 0 && (
-          <Polyline
-            coordinates={destinationRoute.map(([lng, lat]: [number, number]) => ({
-              latitude: lat,
-              longitude: lng,
-            }))}
-            strokeColor="#FFFFFF"
-            strokeWidth={3}
-          />
-        )}
+        {destinationRoute && destinationRoute.length > 0 && (() => {
+          const coordinates = destinationRoute.map(([lng, lat]: [number, number]) => ({
+            latitude: lat,
+            longitude: lng,
+          }));
+          
+          // Debug logging
+          console.log('Destination route - travelMode:', route?.travelMode, 'route:', route);
+          
+          const isWalking = route?.travelMode === 'WALKING';
+          console.log('Is walking mode:', isWalking);
+          
+          if (isWalking) {
+            // Render dotted line for walking
+            return createDottedLineSegments(coordinates).map((segment, index) => (
+              <Polyline
+                key={`destination-walking-segment-${index}`}
+                coordinates={segment}
+                strokeColor="#cccdcfff"
+                strokeWidth={2}
+              />
+            ));
+          } else {
+            // Render solid line for drivingdfdf
+            return (
+              <Polyline
+                coordinates={coordinates}
+                strokeColor="#2f3cf7ff"
+                strokeWidth={3}
+              />
+            );
+          }
+        })()}
         
-        {route?.routeGeometry && route.routeGeometry.length > 0 && (
-          <Polyline
-            coordinates={route.routeGeometry.map(([lng, lat]) => ({
-              latitude: lat,
-              longitude: lng,
-            }))}
-            strokeColor="#FF6B6B"
-            strokeWidth={3}
-          />
-        )}
+        {route?.routeGeometry && route.routeGeometry.length > 0 && (() => {
+          const coordinates = route.routeGeometry.map(([lng, lat]) => ({
+            latitude: lat,
+            longitude: lng,
+          }));
+          
+          // Debug logging
+          console.log('Main route - travelMode:', route?.travelMode, 'route:', route);
+          
+          const isWalking = route?.travelMode === 'WALKING';
+          console.log('Is walking mode (main route):', isWalking);
+          
+          if (isWalking) {
+            // Render dotted line for walking
+            return createDottedLineSegments(coordinates).map((segment, index) => (
+              <Polyline
+                key={`walking-segment-${index}`}
+                coordinates={segment}
+                strokeColor="#cccdcfff"
+                strokeWidth={2}
+              />
+            ));
+          } else {
+            // Render solid line for driving
+            return (
+              <Polyline
+                coordinates={coordinates}
+                strokeColor="#66710fff"
+                strokeWidth={3}
+              />
+            );
+          }
+        })()}
         
         {route?.startLocation && (
           <Marker

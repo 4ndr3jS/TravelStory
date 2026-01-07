@@ -19,7 +19,9 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "usesCleartextTraffic": true,
+      "networkSecurityConfig": "./network_security_config.xml"
     },
     "web": {
       "output": "static",
@@ -45,8 +47,7 @@
       "reactCompiler": true
     },
     "extra": {
-      "ORS_API_KEY": "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImEwOTg1YjQ1ZDViYjRhZWI4NzhiOGUzZGFhNDc1Mjc2IiwiaCI6Im11cm11cjY0In0=",
-      "GRAPHHOPPER_API_KEY": "b425b743-c845-4380-9725-bda3e5622667"
+      "GRAPHHOPPER_API_KEY": "923514d3-0b9e-4d12-bc6c-fedea6c96348"
     }
   }
 }

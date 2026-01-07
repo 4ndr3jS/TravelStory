@@ -114,10 +114,6 @@ const RoutePlanner: React.FC<Props> = ({ onRouteFound, loading, error }) => {
           onSelectAddress={async (address) => {
             console.log('RoutePlanner received address:', address); // Debug log
             try {
-              setEndAddress(address);
-              console.log('Set endAddress to:', address);
-              
-              // Geocode the address to get coordinates for the map
               console.log('Starting geocoding for:', address);
               const coords = await geocodeAddress(address);
               console.log('Geocoding result:', coords);
@@ -129,6 +125,9 @@ const RoutePlanner: React.FC<Props> = ({ onRouteFound, loading, error }) => {
                 // Calculate route from current location to destination
                 if (userLocation) {
                   console.log('Calculating route from userLocation to destination');
+                  console.log('User location:', userLocation);
+                  console.log('Travel mode:', travelMode);
+                  console.log('Selected style:', selectedStyle);
                   try {
                     const routeDetails = await calculateRoute(
                       `${userLocation.latitude},${userLocation.longitude}`,
@@ -146,7 +145,7 @@ const RoutePlanner: React.FC<Props> = ({ onRouteFound, loading, error }) => {
                   }
                 }
               } else {
-                console.log('Geocoding failed, no coordinates found');
+                console.log('No coordinates found for address:', address);
               }
             } catch (error) {
               console.error('Error in onSelectAddress:', error);

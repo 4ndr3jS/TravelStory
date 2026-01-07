@@ -63,27 +63,17 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   }, [value, justSelected]);
 
   const handleSelectAddress = (suggestion: GeocodeResult) => {
-    console.log('Selected address:', suggestion.display_name); // Debug log
-    onSelectAddress(suggestion.display_name);
-    setShowSuggestions(false);
-    // Don't blur immediately to avoid conflicts
-    setTimeout(() => {
-      inputRef.current?.blur();
-    }, 100);
-  };
-
-  const handleSuggestionClick = (suggestion: GeocodeResult) => {
-    console.log('Suggestion clicked:', suggestion.display_name);
+    console.log('Selected address:', suggestion.display_name);
     setJustSelected(true);
     setShowSuggestions(false);
     
     // Update input immediately
     onChangeText(suggestion.display_name);
     
-    // Call the callback
+    // Call callback to trigger route calculation
     onSelectAddress(suggestion.display_name);
     
-    // Blur input
+    // Blur input after a short delay
     setTimeout(() => {
       inputRef.current?.blur();
     }, 100);
@@ -128,7 +118,7 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
               onPress={() => {
                 console.log('TOUCHABLE PRESSED!!!');
                 console.log('Touch event fired for:', suggestion.display_name);
-                handleSuggestionClick(suggestion);
+                handleSelectAddress(suggestion);
               }}
               onPressIn={() => console.log('Touch IN for:', suggestion.display_name)}
               activeOpacity={0.7}

@@ -19,80 +19,153 @@ export interface GeocodeResult {
 }
 
 export const geocodeAddress = async (address: string): Promise<GeocodeResult | null> => {
-  try {
-    const response = await fetch(
-      `${NOMINATIM_BASE_URL}/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
-      {
-        headers: {
-          'User-Agent': 'EchoPaths/1.0',
-        },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Geocoding failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    if (data.length === 0) {
-      return null;
-    }
-
-    const result = data[0];
-    return {
-      display_name: result.display_name,
-      lat: parseFloat(result.lat),
-      lng: parseFloat(result.lon),
-    };
-  } catch (error) {
-    console.error('Geocoding error:', error);
+  if (!address || address.trim().length < 2) {
     return null;
   }
+
+  const endpoints = [
+    {
+      url: `${NOMINATIM_BASE_URL}/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
+      headers: { 'User-Agent': 'TravelStory/1.0' }
+    },
+    {
+      url: `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
+      headers: { 'User-Agent': 'TravelStory/1.0' }
+    },
+    {
+      url: `https://photon.komoot.io/api?q=${encodeURIComponent(address)}&limit=1`,
+      headers: { 'User-Agent': 'TravelStory/1.0' }
+    }
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
+      const response = await fetch(endpoint.url, {
+        headers: endpoint.headers,
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        console.warn('Geocoding HTTP error:', response.status, response.statusText);
+        continue; // Try next endpoint
+      }
+
+      const data = await response.json();
+      
+      // Handle different response formats
+      let results = [];
+      if (Array.isArray(data)) {
+        results = data;
+      } else if (data && data.features && Array.isArray(data.features)) {
+        // Photon API format
+        results = data.features.map((feature: any) => ({
+          display_name: feature.properties.name || `${feature.properties.city || ''}, ${feature.properties.country || ''}`,
+          lat: feature.geometry.coordinates[1],
+          lon: feature.geometry.coordinates[0]
+        }));
+      }
+
+      if (results.length === 0) {
+        console.warn('No geocoding results found');
+        continue; // Try next endpoint
+      }
+
+      const result = results[0];
+      return {
+        display_name: result.display_name,
+        lat: parseFloat(result.lat),
+        lng: parseFloat(result.lon),
+      };
+    } catch (error) {
+      console.error('Geocoding error for endpoint:', endpoint.url, error);
+      // Continue to next endpoint
+    }
+  }
+
+  console.warn('All geocoding endpoints failed for address:', address);
+  return null;
 };
 
 export const searchAddresses = async (query: string): Promise<GeocodeResult[]> => {
-  try {
-    // Add a small delay to avoid rapid successive requests
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-    
-    const response = await fetch(
-      `${NOMINATIM_BASE_URL}/search?format=json&q=${encodeURIComponent(query)}&limit=5`,
-      {
-        headers: {
-          'User-Agent': 'EchoPaths/1.0',
-        },
-        signal: controller.signal,
-      }
-    );
-    
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      console.warn('Address search HTTP error:', response.status, response.statusText);
-      return [];
-    }
-
-    const data = await response.json();
-    
-    if (!Array.isArray(data)) {
-      console.warn('Invalid response format from Nominatim');
-      return [];
-    }
-    
-    return data.map((result: any) => ({
-      display_name: result.display_name,
-      lat: parseFloat(result.lat),
-      lng: parseFloat(result.lon),
-    }));
-  } catch (error) {
-    console.error('Address search error:', error);
-    // Return empty array on network errors instead of crashing
+  if (!query || query.trim().length < 2) {
     return [];
   }
+
+  const endpoints = [
+    {
+      url: `${NOMINATIM_BASE_URL}/search?format=json&q=${encodeURIComponent(query)}&limit=5`,
+      headers: { 'User-Agent': 'TravelStory/1.0' }
+    },
+    {
+      url: `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`,
+      headers: { 'User-Agent': 'TravelStory/1.0' }
+    },
+    {
+      url: `https://photon.komoot.io/api?q=${encodeURIComponent(query)}&limit=5`,
+      headers: { 'User-Agent': 'TravelStory/1.0' }
+    }
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      // Add a small delay to avoid rapid successive requests
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
+      const response = await fetch(endpoint.url, {
+        headers: endpoint.headers,
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        console.warn('Address search HTTP error:', response.status, response.statusText);
+        continue; // Try next endpoint
+      }
+
+      const data = await response.json();
+      
+      // Handle different response formats
+      let results = [];
+      if (Array.isArray(data)) {
+        results = data;
+      } else if (data && data.features && Array.isArray(data.features)) {
+        // Photon API format
+        results = data.features.map((feature: any) => ({
+          display_name: feature.properties.name || `${feature.properties.city || ''}, ${feature.properties.country || ''}`,
+          lat: feature.geometry.coordinates[1],
+          lon: feature.geometry.coordinates[0]
+        }));
+      }
+      
+      if (!Array.isArray(results) || results.length === 0) {
+        console.warn('Invalid response format or empty results from endpoint');
+        continue; // Try next endpoint
+      }
+      
+      console.log('Search results:', results.length, 'items found from', endpoint.url);
+      
+      return results.map((result: any) => ({
+        display_name: result.display_name,
+        lat: parseFloat(result.lat),
+        lng: parseFloat(result.lon),
+      }));
+    } catch (error) {
+      console.error('Address search error for endpoint:', endpoint.url, error);
+      // Continue to next endpoint
+    }
+  }
+
+  console.warn('All address search endpoints failed');
+  return [];
 };
 
 export const calculateRoute = async (
